@@ -10,125 +10,243 @@
 #include <cstring>
 #include <conio.h>
 #include <io.h>
+#include <algorithm>
+#include<functional>
+#include <vector>
+#include <map>
+#include <list>
 
 using namespace std;
 
 #define LoopI(N) for(int i{}; i < N; ++i)
 #define LoopJ(N) for(int j{}; j < N; ++j)
 
-//Задание 1.
-//Создать программу, обрабатывающую исключения при работе
-//с вещественными числами с использованием инструкции try, catch, throw.
-//Проект – консольное приложение.
-//В задании надо рассчитывать массив f[x] = 1 / (x – N) при x = 0…k.
-//Варианты заданий.
-//N – последняя цифра номера паспорта плюс 5.
-//Необходимо отслеживать два исключения :
-//Деление на 0.
-//Выход за пределы диапазона.
-//При работе с программой менять k, чтобы получать разные
-//условия возможного возникновения исключений.
-//Пример.
-//
-//Вариант задания : f[x] = 1 / (x - 5).N = 10
+//#define Name(Name) # Name
 
-double f(int x) { 
+/*
+Задание.
+Создайте приложение для работы автосалона. Необходимо хранить информацию о продаваемых автомобилях 
+(название, год выпуска, объем двигателя, цену). Реализуйте интерфейс для добавления данных, 
+удаления данных, отображения данных, сортировке данных по различным параметрам, поиску данных по 
+различным параметрам. При реализации используйте контейнеры, функторы и
+алгоритмы.
+*/
+enum Sigil { Descend, Ascend };
+enum Tag { Name, Capasity, Year, Price };
 
-	const int N = 12;
 
-	if (x - N == 0)
-		throw 0;
-	return (1.0 / (x - N)); 
-}
+struct Car {
+	string name;
+	double engine_capasity;
+	int year;
+	int price;
 
-void task1(const unsigned int k) {
-	try {
-		if (k >= 245000000)
-			throw 'b';
+	Car() : name{}, engine_capasity{}, year{}, price{} {};
+	Car(string n, double ec, int y, int p) :name{ n }, engine_capasity{ ec }, year{ y }, price{ p }{};
+	void fill(string n, int y, int ec, int p) {
+		name = n;
+		engine_capasity = ec;
+		year = y;
+		price = p;
 	}
-	catch (char) {
-		cout << "--bad alloc-" << endl;
-		return;
+	void print() const{
+		std::cout << "Car:" << endl
+			<< "\tname: " << name << endl
+			<< "\tengine capasity: " << engine_capasity << " liter" << endl
+			<< "\tyear: " << year << endl
+			<< "\tprice: " << price << " $" << endl;
 	}
-	double* arr = new double[k] {};
-	for (int x{}; x <= k; ++x) {
-		try
-		{
-			if (x == k)
-				throw "--выход за пределы диапазона-";
-			arr[x] = f(x);
-			cout << arr[x] << endl;
+	
+
+	~Car() { 
+		//cout << "__Del__" << endl;
+	};
+};
+
+
+
+class Autosalon {
+	vector<Car> Cars;
+	std::vector<Car>::iterator searcher(const char* val){
+		return find_if(Cars.begin(), Cars.end(), [&](Car e) {
+			if (e.name == val) return true;
+			else return false;
+			});
+	}
+	std::vector<Car>::iterator searcher(double val){
+		return find_if(Cars.begin(), Cars.end(), [&](Car e) {
+			if (e.engine_capasity == val) return true;
+			else return false;
+			});
+	}
+	std::vector<Car>::iterator searcher(int val) {
+		if (val / 1000 <= 2) {
+			return find_if(Cars.begin(), Cars.end(), [&](Car e) {
+				if (e.year == val) return true;
+				else return false;
+				});
 		}
-		catch (int)
-		{
-			cout << "--деление на ноль-" << endl;
+		else
+			 {
+				return find_if(Cars.begin(), Cars.end(), [&](Car e) {
+					if (e.price == val) return true;
+					else
+						return false; });
+			}
+	}
+public:
+	Autosalon() {};
+	Autosalon(int size) {
+		Cars.resize(size);
+	}
+	Autosalon(initializer_list<Car>C) {
+		for (auto e : C) {
+			Cars.push_back(e);
 		}
-		catch (const char e[]) {
-			cout << e << endl;
+	};
+	void sort(Sigil s, Tag t) {
+		switch (t) {
+		case 0:
+			std::sort(Cars.begin(), Cars.end(), [s](Car a, Car b) {
+				if (s) return a.name[0] < b.name[0];
+				else return a.name[0] > b.name[0];
+				});
+			break;
+		case 1:
+			std::sort(Cars.begin(), Cars.end(), [s](Car a, Car b) {
+				if (s) return a.engine_capasity < b.engine_capasity;
+				else return a.engine_capasity > b.engine_capasity;
+				});
+			break;
+		case 2:
+			std::sort(Cars.begin(), Cars.end(), [s](Car a, Car b) {
+				if (s) return a.year < b.year;
+				else return a.year > b.year;
+				});
+			break;
+		case 3:
+			std::sort(Cars.begin(), Cars.end(), [s](Car a, Car b) {
+				if (s) return a.price < b.price;
+				else return a.price > b.price;
+				});
+			break;
+		default:
+			break;
 		}
 	}
 
-	delete[] arr;
-}
-
-//Задание 2.
-//
-//1) Деление на ноль        ---  Было выше , не вижу смысла повторять
-//2) Ввод числа вместо буквы
-//3) Выход за границы массива(матрицы).Матрица 2х2, мы, к примеру, перемножаем элементы(3; 3)
-//4) Неверный тип входных параметров(вместо Int пишем double)
-
-//task2
-
-void task2_2() {
-	char ch{};
-	cout << "--Vvedite bukvu-" << endl;
-	try {
-		cin >> ch;
-		if ((ch < 'A' || ch >'Z') || (ch > 'z' || ch < 'a'))
-			throw 0;
+	template<typename T>
+	auto search(T val) {
+		std::vector<Car>::iterator it = searcher(val);
+		if (it == end(Cars))
+			cout << "--not found-\tvalue: " << val << endl;
+		else
+			(*it).print();
 	}
-	catch (int) {
-		cout << "--Ne bukva-" << endl;
-	}
-}
 
-void task2_3() {
-	int arrch[2][2]{1,2,3,4};
-	int mul1{}, mul2{};
-	try {
-		cin >> mul1 >> mul2;
-		if ((mul1 > 2 || mul2 > 2) || (mul1 < 0 || mul2 < 0)) {
-			throw 'B';
-			return;
+	void push(Car x) {
+		Cars.push_back(x);
+	}
+	void print() const{
+		for (auto e : Cars) {
+			e.print();
 		}
-			
 	}
-	catch (char) {
-		cout << "Vyhod za granitsi" << endl;
+	Car& get(int index) {
+		try {
+			if (index < 0 || index > Cars.size())
+				throw 0;
+		}
+		catch (int){
+			std::cout << "--Invalide index-" << endl;
+		}
+
+		return Cars[index];
+	}
+	Car operator[](int i) {
+		try {
+			if (i < 0 || i > Cars.size())
+				throw 0;
+			else
+				return get(i);
+		}
+		catch (int) {
+			std::cout << "--Invalide index-" << endl;
+		}
+	}
+	void del(int i) {
+		
+		try {
+			auto it = Cars.begin();
+			if (it + i >= Cars.end())
+				throw 0;
+			else
+				Cars.erase(it+i);
+		}
+		catch (int) { std::cout << "--Invalide index-" << endl; }
 	}
 
-	cout << arrch[mul1][mul2] << endl;
-}
-
-void task2_4(int e) {}
+	~Autosalon() {};
+};
 
 int main()
 {
 	setlocale(LC_ALL, "ru-ru");
 	srand(time(NULL));
-
 	//system("pause");
 	//system("cls");
+
+	Autosalon Au({
+		Car("X5", 3.0, 2023, 14500000),
+		Car("Polo", 1.6, 2021, 1629000),
+		Car("Wrangler", 3.6, 2024, 12500000),
+		Car("Camry", 2.0, 2024, 4879000),
+		Car("Q5", 2.0, 2022, 5550000),
+		Car("Ku-Ku",22.8,4047,0)
+		});
+	Au.print();
+	std::cout << "\n##*------------------------------------------------------*##\n";
+
+	//Au.get(0).print();
+	//Au[1].print();
+	Au.del(5);
+	//Au.print();
 	
-	//task1(12);
-	//task1(24);
-	//task1(48);
+	cout << "\n##*------------------------Name------------------------------*##\n";
+	Au.sort(Ascend, Name);
+	Au.print();
+	cout << "\n##*------------------------Name------------------------------*##\n";
+	Au.sort(Descend, Name);
+	Au.print();
+	cout << "\n##*------------------------Capasity------------------------------*##\n";
+	Au.sort(Ascend, Capasity);
+	Au.print();
 
-	//task2_2();
+	cout << "\n##*------------------------Capasity------------------------------*##\n";
+	Au.sort(Descend, Capasity);
+	Au.print();
+	
+	cout << "\n##*------------------------Year------------------------------*##\n";
+	Au.sort(Ascend, Year);
+	Au.print();
 
-	//task2_3(); 
+	cout << "\n##*------------------------Year------------------------------*##\n";
+	Au.sort(Descend, Year);
+	Au.print(); 
+	
+	cout << "\n##*------------------------Price------------------------------*##\n";
+	Au.sort(Ascend, Price);
+	Au.print();
+	cout << "\n##*------------------------Price------------------------------*##\n";
+	Au.sort(Descend, Price);
+	Au.print();
 
-	//task2_4(1.0);// Y ne smog pridumat` , kak viletet` s double-om : int obrezaet . PS i v f(int) , i v cin >> <int>
+	Au.search("Polo");
+	Au.search(1.6);
+	Au.search(2024);
+	Au.search(5550000);
+
+	Au.search("Ku-Ku");
+	Au.search(99999);
 }
 
