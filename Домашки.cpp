@@ -10,243 +10,145 @@
 #include <cstring>
 #include <conio.h>
 #include <io.h>
-#include <algorithm>
-#include<functional>
-#include <vector>
-#include <map>
-#include <list>
+
+#include<memory>
 
 using namespace std;
 
 #define LoopI(N) for(int i{}; i < N; ++i)
 #define LoopJ(N) for(int j{}; j < N; ++j)
 
-//#define Name(Name) # Name
+unsigned int Count{};
 
-/*
-Задание.
-Создайте приложение для работы автосалона. Необходимо хранить информацию о продаваемых автомобилях 
-(название, год выпуска, объем двигателя, цену). Реализуйте интерфейс для добавления данных, 
-удаления данных, отображения данных, сортировке данных по различным параметрам, поиску данных по 
-различным параметрам. При реализации используйте контейнеры, функторы и
-алгоритмы.
-*/
-enum Sigil { Descend, Ascend };
-enum Tag { Name, Capasity, Year, Price };
+template<class T>
+class SharedPointer {
+	T* point;
+	unsigned int* counter = &Count;
 
-
-struct Car {
-	string name;
-	double engine_capasity;
-	int year;
-	int price;
-
-	Car() : name{}, engine_capasity{}, year{}, price{} {};
-	Car(string n, double ec, int y, int p) :name{ n }, engine_capasity{ ec }, year{ y }, price{ p }{};
-	void fill(string n, int y, int ec, int p) {
-		name = n;
-		engine_capasity = ec;
-		year = y;
-		price = p;
+	void increase() { ++* counter; }
+	void decrease() {
+		if (*counter > 0)
+			--* counter;
 	}
-	void print() const{
-		std::cout << "Car:" << endl
-			<< "\tname: " << name << endl
-			<< "\tengine capasity: " << engine_capasity << " liter" << endl
-			<< "\tyear: " << year << endl
-			<< "\tprice: " << price << " $" << endl;
-	}
-	
 
-	~Car() { 
-		//cout << "__Del__" << endl;
+public:
+	SharedPointer(T* p = nullptr) : point{ p } {
+		cout << "constr A:" << endl;
+		if (p)
+			increase();
+	}
+	SharedPointer(const SharedPointer& p) { //----
+		cout << "constr B:" << endl;
+		point = p.point;					// Оба так ни разу не отработали, хоть я и пытался
+		increase();
 	};
-};
+	SharedPointer(SharedPointer&& p) {     //----
+		cout << "constr C:" << endl;
+		point = p.point;
+		increase();
+	};
+	SharedPointer& operator=(const SharedPointer& p) {
+		point = p.point;
+		increase();
+		return *this;
+	};
+	SharedPointer& operator=(SharedPointer&& p) {
+		point = p.point;
+		increase();
+		return *this;
+	};
 
 
+	unsigned int use_count() const { return *counter; }
 
-class Autosalon {
-	vector<Car> Cars;
-	std::vector<Car>::iterator searcher(const char* val){
-		return find_if(Cars.begin(), Cars.end(), [&](Car e) {
-			if (e.name == val) return true;
-			else return false;
-			});
-	}
-	std::vector<Car>::iterator searcher(double val){
-		return find_if(Cars.begin(), Cars.end(), [&](Car e) {
-			if (e.engine_capasity == val) return true;
-			else return false;
-			});
-	}
-	std::vector<Car>::iterator searcher(int val) {
-		if (val / 1000 <= 2) {
-			return find_if(Cars.begin(), Cars.end(), [&](Car e) {
-				if (e.year == val) return true;
-				else return false;
-				});
-		}
-		else
-			 {
-				return find_if(Cars.begin(), Cars.end(), [&](Car e) {
-					if (e.price == val) return true;
-					else
-						return false; });
+	~SharedPointer() {
+		decrease();
+		cout << "del-- " << *counter << endl;
+		if (*counter == 0)
+			if (point) { //чисто на всякий случай
+				cout << "All delete--" << endl;
+				delete point;
+				point = nullptr; //чисто на всякий случай
 			}
 	}
-public:
-	Autosalon() {};
-	Autosalon(int size) {
-		Cars.resize(size);
-	}
-	Autosalon(initializer_list<Car>C) {
-		for (auto e : C) {
-			Cars.push_back(e);
-		}
-	};
-	void sort(Sigil s, Tag t) {
-		switch (t) {
-		case 0:
-			std::sort(Cars.begin(), Cars.end(), [s](Car a, Car b) {
-				if (s) return a.name[0] < b.name[0];
-				else return a.name[0] > b.name[0];
-				});
-			break;
-		case 1:
-			std::sort(Cars.begin(), Cars.end(), [s](Car a, Car b) {
-				if (s) return a.engine_capasity < b.engine_capasity;
-				else return a.engine_capasity > b.engine_capasity;
-				});
-			break;
-		case 2:
-			std::sort(Cars.begin(), Cars.end(), [s](Car a, Car b) {
-				if (s) return a.year < b.year;
-				else return a.year > b.year;
-				});
-			break;
-		case 3:
-			std::sort(Cars.begin(), Cars.end(), [s](Car a, Car b) {
-				if (s) return a.price < b.price;
-				else return a.price > b.price;
-				});
-			break;
-		default:
-			break;
-		}
+	void swap(SharedPointer& p) {
+		auto temp = p.point;
+		p.point = point;
+		point = temp;
 	}
 
-	template<typename T>
-	auto search(T val) {
-		std::vector<Car>::iterator it = searcher(val);
-		if (it == end(Cars))
-			cout << "--not found-\tvalue: " << val << endl;
-		else
-			(*it).print();
-	}
+	T* get() { return point; }
 
-	void push(Car x) {
-		Cars.push_back(x);
-	}
-	void print() const{
-		for (auto e : Cars) {
-			e.print();
+	operator bool() { return (bool)point; }
+	T& operator* () {
+		/*try {  // Я пытался, ничего нормального не получилось.
+			if (point)*/
+		return *point;
+		/*else {
+			throw 0;
 		}
 	}
-	Car& get(int index) {
-		try {
-			if (index < 0 || index > Cars.size())
-				throw 0;
-		}
-		catch (int){
-			std::cout << "--Invalide index-" << endl;
-		}
+	catch (int) {
+		cout << "Error value" << endl;
+	}*/
+	}
+	SharedPointer* operator-> () { // Ваш T* operator-> () { return ptr; } у меня не сработал.
+		return *this;
+	}
+	/*
+		V shared_ptr	Создает документ shared_ptr.
+		V ~shared_ptr	Удаляет shared_ptr.
 
-		return Cars[index];
-	}
-	Car operator[](int i) {
-		try {
-			if (i < 0 || i > Cars.size())
-				throw 0;
-			else
-				return get(i);
-		}
-		catch (int) {
-			std::cout << "--Invalide index-" << endl;
-		}
-	}
-	void del(int i) {
-		
-		try {
-			auto it = Cars.begin();
-			if (it + i >= Cars.end())
-				throw 0;
-			else
-				Cars.erase(it+i);
-		}
-		catch (int) { std::cout << "--Invalide index-" << endl; }
-	}
+		X Typedefs
+		X element_type	Тип элемента.
+		X weak_type	Тип слабого указателя на элемент.
 
-	~Autosalon() {};
+		Функции-члены
+		V get	Возвращает адрес принадлежащего ресурса.
+		??? owner_before	Возвращает значение true, если shared_ptr упорядочен до (меньше) предоставленного указателя.
+		??? reset	Заменяет принадлежащий ресурс.
+		V swap	Меняет местами два объекта shared_ptr.
+		X unique	Проверяет, является ли принадлежащий ресурс уникальным.
+		V use_count	Подсчитывает количество владельцев ресурса.
+
+		V Операторы
+		V operator bool	Проверяет существование принадлежащего ресурса.
+		V operator*	Возвращает указанное значение.
+		V operator=	Заменяет принадлежащий ресурс.
+		V operator->
+	*/
 };
+
 
 int main()
 {
 	setlocale(LC_ALL, "ru-ru");
 	srand(time(NULL));
 	//system("pause");
-	//system("cls");
 
-	Autosalon Au({
-		Car("X5", 3.0, 2023, 14500000),
-		Car("Polo", 1.6, 2021, 1629000),
-		Car("Wrangler", 3.6, 2024, 12500000),
-		Car("Camry", 2.0, 2024, 4879000),
-		Car("Q5", 2.0, 2022, 5550000),
-		Car("Ku-Ku",22.8,4047,0)
-		});
-	Au.print();
-	std::cout << "\n##*------------------------------------------------------*##\n";
+	SharedPointer<int> a(new int(5));
+	cout << a.use_count() << endl;
+	if (a) { cout << "Yes" << endl; }
 
-	//Au.get(0).print();
-	//Au[1].print();
-	Au.del(5);
-	//Au.print();
-	
-	cout << "\n##*------------------------Name------------------------------*##\n";
-	Au.sort(Ascend, Name);
-	Au.print();
-	cout << "\n##*------------------------Name------------------------------*##\n";
-	Au.sort(Descend, Name);
-	Au.print();
-	cout << "\n##*------------------------Capasity------------------------------*##\n";
-	Au.sort(Ascend, Capasity);
-	Au.print();
+	cout << endl;
 
-	cout << "\n##*------------------------Capasity------------------------------*##\n";
-	Au.sort(Descend, Capasity);
-	Au.print();
-	
-	cout << "\n##*------------------------Year------------------------------*##\n";
-	Au.sort(Ascend, Year);
-	Au.print();
+	SharedPointer<int> b;
+	cout << "getN:" << b.get() << endl;
+	cout << b.use_count() << endl;
+	//cout << *b; Alert !!!
+	if (b) { cout << "Yes" << endl; }
+	else { cout << "No" << endl; }
+	b = a;
+	cout << "b= " << *b << endl;
+	cout << "getF:" << b.get() << endl;
+	cout << b.use_count() << endl;
 
-	cout << "\n##*------------------------Year------------------------------*##\n";
-	Au.sort(Descend, Year);
-	Au.print(); 
-	
-	cout << "\n##*------------------------Price------------------------------*##\n";
-	Au.sort(Ascend, Price);
-	Au.print();
-	cout << "\n##*------------------------Price------------------------------*##\n";
-	Au.sort(Descend, Price);
-	Au.print();
+	cout << endl;
 
-	Au.search("Polo");
-	Au.search(1.6);
-	Au.search(2024);
-	Au.search(5550000);
+	SharedPointer<char>c(SharedPointer<char>(new char{ 'a' })); // <- <- <- Вот сдесь пытался
+	cout << c.use_count() << "  " << *(c.get()) << endl;
+	cout << endl;
+	//auto ss = shared_ptr<int>(new int{ 5 });
 
-	Au.search("Ku-Ku");
-	Au.search(99999);
 }
 
